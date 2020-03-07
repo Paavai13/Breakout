@@ -1,0 +1,273 @@
+<html>
+    <head>
+        <title>
+            BREAKOUT
+        </title>
+    </head>
+    <body>
+        <canvas height="500" width="500" style="border:2px solid #000000" id="ctx"/>
+        <script>
+            var ctx = document.getElementById('ctx').getContext('2d');
+            var HEIGHT = 500;
+            var WIDTH = 500;
+            var noOfTiles,tileList,score,running,hitCount;
+            ctx.font = '20px Calibri';
+            ctx.fillText("CLICK TO START THE GAME",100,50);
+            var ball = {
+                x:0,
+                y:0,
+                radius : 5,
+                color : 'blue',
+                spdX: -5,
+                spdY: -5
+            };
+
+            var base = {
+                x:0 ,
+                y:400,
+                height : 20,
+                width : 100,
+                color : 'red',
+                pressingLeft: false,
+                pressingRight : false,
+                lives: 3
+            };
+
+            var tile = {
+                height : 20,
+                width : 40,
+                color: 'orange'
+            };
+
+            document.onkeydown = function(event)
+            {
+                if(event.keyCode == 37)
+                {
+                    base.pressingLeft = true;
+                    base.pressingRight = false;
+                }
+                else if(event.keyCode == 39)
+                { 
+                    base.pressingRight = true;
+                    base.pressingLeft = false;
+                }
+            }
+
+            document.onkeyup = function(event)
+            {
+                if(event.keyCode == 37)
+                {
+                    base.pressingLeft = false;
+                }
+                else if(event.keyCode == 39)
+                {
+                    base.pressingRight = false;
+                }
+            }
+
+            document.getElementById('ctx').onmousedown = function()
+            {
+                if(running)
+                {
+                    clearInterval(intervalVar);
+                }
+                startGame();
+
+            }
+
+            drawBall = function()
+            {
+                ctx.save();
+                ctx.fillStyle = ball.color;
+                ctx.beginPath();
+                ctx.arc(ball.x,ball.y,ball.radius,0,2*Math.PI);
+                ctx.fill();
+                ctx.restore();
+            }
+
+            drawBase = function()
+            {
+                ctx.save();
+                ctx.fillStyle = base.color;
+                ctx.fillRect(base.x,base.y,base.width,base.height);
+                ctx.restore();
+            }
+
+            drawTile = function(t,i)
+            {
+                ctx.save();
+                ctx.fillStyle = tile.color;
+                ctx.fillRect(t.x,t.y,tile.width,tile.height);
+                ctx.restore();
+            }
+
+            testCollision = function(base,ball)
+            {
+                return ((base.x < ball.x + ball.radius)&&
+                        (ball.x < base.x + base.width)&&
+                        (base.y <ball.y + ball.radius)&&
+                        (ball.y < base.y + base.height));
+            }
+
+            testCollisionWithTiles = function(ball,t)
+            {
+                return ((t.x < ball.x + ball.radius)&&
+                        (ball.x < t.x + tile.width)&&
+                        (t.y <ball.y + ball.radius)&&
+                        (ball.y < t.y + tile.height));
+            }
+
+            updateBasePosition = function()
+            {
+                if(base.pressingLeft)
+                {
+                    base.x -= 5;
+                }
+                else if(base.pressingRight)
+                {
+                    base.x += 5;
+                }
+                if(base.x < 0)
+                {
+                    base.x = 0;
+                }
+                if(base.x>400)
+                {
+                    base.x = 400;
+                }
+            }
+
+            updateBallPosition = function()
+            {
+                ball.x += ball.spdX;
+                ball.y += ball.spdY;
+                if(ball.x > WIDTH || ball.x < 0)
+                {
+                    ball.spdX = -ball.spdX;
+                    hitCount++;
+                    if(hitCount % 10 == 0)
+                    {
+                        if(ball.spdX < 0)
+                        {
+                            ball.spdX = -(Math.abs(ball.spdX)+1);
+                        }
+                        else if(ball.spdX > 0)
+                        {
+                            ball.spdX += 1;
+                        }
+                    }
+                }
+                else if(ball.y < 0)
+                {
+                    ball.spdY = -ball.spdY;
+                    hitCount++;
+                    if(hitCount % 10 == 0)
+                    {
+                        if(ball.spdY < 0)
+                        {
+                            ball.spdY = -(Math.abs(ball.spdY)+1);
+                        }
+                        else if(ball.spdY > 0)
+                        {
+                            ball.spdY += 1;
+                        }
+                    }
+
+                   // base.lives--;
+                }
+                if(ball.y > HEIGHT)
+                {
+                    ball.spdY = -ball.spdY;
+                    base.lives--;
+                    hitCount++;
+                    if(hitCount % 10 == 0)
+                    {
+                        if(ball.spdY < 0)
+                        {
+                            ball.spdY = -(Math.abs(ball.spdY)+1);
+                        }
+                        else if(ball.spdY > 0)
+                        {
+                            ball.spdY += 1;
+                        }
+                    }
+
+
+                }
+            }
+
+            isGameOver = function()
+            {
+                if(score == 330)
+                {
+                    clearInterval(interVal);
+                    running=false;
+                    ctx.fillText("well done",200,250);
+                }
+                else
+                if(base.lives < 0)
+                {
+                    clearInterval(intervalVar);
+                    ctx.clearRect(0,0,WIDTH,HEIGHT);
+                    ctx.fillText("GAMEOVER",200,250);
+                    running = false;
+                }
+            }
+
+            update = function()
+            {
+                ctx.clearRect(0,0,WIDTH,HEIGHT);
+                                      
+                tileList.forEach(drawTile);
+                drawBall();
+                drawBase();
+                if(testCollision(base,ball))
+                {
+                    ball.spdY = -ball.spdY;
+                }
+                for(key in tileList)
+                {
+                    if(testCollisionWithTiles(ball,tileList[key]))
+                    {
+                        delete(tileList[key]);
+                        ball.spdY = -ball.spdY;
+                        score += 5; 
+                    }
+                }
+                ctx.fillText("SCORE: "+score , 5 ,490);
+                ctx.fillText("LIVES: "+ base.lives,420,490);
+                updateBasePosition();
+                updateBallPosition();
+                isGameOver();
+            }
+
+            startGame = function()
+            {
+                base.x = 150;
+                ball.x = base.x + 100;
+                ball.y = base.y - 100;
+                noOfTiles = 0;
+                var tileX =5 ;
+                var tileY = 5;
+                score = 0;
+                hitCount = 0;
+                running = true;
+                tileList = [];
+                for (var i=1;i<=6;i++)
+                {
+                    tileX = 5;
+                    for(var j=1;j<=11;j++)
+                    {
+                        tileList[noOfTiles] = {x:tileX,y:tileY};
+                        noOfTiles++;
+                        tileX += 45;
+                    }
+                    tileY += 25;
+                }
+                intervalVar = setInterval(update,20);     
+            }
+
+
+        </script>
+    </body>
+</html>
